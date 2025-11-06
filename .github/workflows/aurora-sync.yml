@@ -1,0 +1,10 @@
+name: Aurora Sync
+on:
+  push:
+    branches: [ main ]
+jobs:
+  ok:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Aurora workflow alive ✅"

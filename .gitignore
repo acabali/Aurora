@@ -1,0 +1,13 @@
+Activos/Pictures/Photos Library.photoslibrary/
+Activos/Downloads/
+*.dmg
+*.pkg
+*.iso
+*.zip
+*.tar*
+*.zst
+*.7z
+*.mp4
+*.mov
+*.mkv
+aurora_*.tar.zst

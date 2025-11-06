@@ -1,0 +1,38 @@
+from dataclasses import dataclass
+from typing import List
+from sqlalchemy import text
+from aurora.core.db import engine, SessionLocal
+from aurora.core.embeddings import embed_texts
+@dataclass
+class Doc:
+    id: int | None
+    source: str
+    title: str
+    content: str
+    tags: list[str]
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS documents(
+  id SERIAL PRIMARY KEY,
+  source TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  tags TEXT[] DEFAULT '{}',
+  embedding vector(384)
+);
+CREATE INDEX IF NOT EXISTS idx_documents_embedding ON documents USING ivfflat (embedding vector_cosine_ops);
+"""
+def init():
+    with engine.begin() as conn:
+        conn.execute(text(SCHEMA_SQL))
+def add_documents(docs: List[Doc]):
+    embs = embed_texts([d.content for d in docs])
+    rows = [(d.source, d.title, d.content, d.tags, emb) for d, emb in zip(docs, embs)]
+    with engine.begin() as conn:
+        for r in rows:
+            conn.execute(text("INSERT INTO documents(source,title,content,tags,embedding) VALUES (:s,:t,:c,:g,:e)"),
+                         {"s": r[0], "t": r[1], "c": r[2], "g": r[3], "e": r[4]})
+def search(query: str, limit: int = 5):
+    with SessionLocal() as s:
+        res = s.execute(text("SELECT id, source, title, content, tags FROM documents ORDER BY id DESC LIMIT :lim"),
+                        {"lim": limit}).fetchall()
+        return [dict(r._mapping) for r in res]
